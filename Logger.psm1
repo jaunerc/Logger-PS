@@ -11,6 +11,8 @@ $PROPERTIES_KEY_FILEFORMAT = "log.fileformat"
 
 $LOGFILE_PATTERN_DATE = "%DATE%"
 
+$LOGFILE_SEPARATOR_PATTERN_SPACE = "%SPACE%"
+
 <#
 .SYNOPSIS
 Creates a new logger object.
@@ -87,9 +89,10 @@ function Convert-LogFormat {
 	if(-not $isPrefix) {
 		$logNamePart = "_"
 	}
-	$logNamePart += $logFormat
 	if($logFormat.equals($LOGFILE_PATTERN_DATE)) {
-		$logNamePart = get-date -uformat "%d_%m_%y"
+		$logNamePart += get-date -uformat "%y_%m_%d"
+	} else {
+		$logNamePart += $logFormat
 	}
 	return $logNamePart
 }
@@ -115,7 +118,7 @@ function Write-InitState {
 		[string]$logFilePath
 	)
 	ECHO "**********************************************************************" | Out-File -FilePath $logFilePath -append
-	ECHO ("Logfile from " + (get-date)) | Out-File -FilePath $logFilePath -append
+	ECHO ("Logfile from " + (get-date -format "dd.MM.yyyy")) | Out-File -FilePath $logFilePath -append
 	ECHO "**********************************************************************" | Out-File -FilePath $logFilePath -append
 }
 
@@ -206,7 +209,7 @@ function Write-LogEntry {
 		[Parameter(Mandatory=$true)]
 		[string]$logMessage
 	)
-	$separator = $logProperties.item($PROPERTIES_KEY_SEPARATOR)
+	$separator = Get-SeparatorFromProperties -separatorFormat $logProperties.item($PROPERTIES_KEY_SEPARATOR)
 	$dateTimeFormat = $logProperties.item($PROPERTIES_KEY_TIMEFORMAT)
 	$logTimeStamp = New-LogTimeStamp -dateTimeFormat $dateTimeFormat
 	$logLevelText = Get-LogLevelText -logLevel $logLevel
@@ -228,15 +231,42 @@ function Get-LogLevelText {
 		[int]$logLevel
 	)
 	switch($logLevel) {
-		0 { $statusText = "DEBUG"; break }
-		1 { $statusText = "INFO"; break }
+		0 { $statusText = "DEBUG  "; break }
+		1 { $statusText = "INFO   "; break }
 		2 { $statusText = "WARNING"; break }
-		3 { $statusText = "ERROR" }
+		3 { $statusText = "ERROR  " }
 	}
 	if($statusText -eq $null) {
 		throw "The loglevel $logLevel is not supported."
 	}
 	return $statusText
+}
+
+function Get-SeparatorFromProperties {
+	param(
+		[Parameter(Mandatory=$true)]
+		[string]$separatorFormat
+	)
+	$separator = ""
+	for($i=0; $i -lt $separatorFormat.length; $i++) {
+		$currElement = $separatorFormat[$i]
+		if($currElement -eq '%') {
+			for($j=$i+1; $j -lt $separatorFormat.length; $j++) {
+				$currElement = $separatorFormat[$j]
+				if($currElement -eq '%') {
+					break
+				}
+			}
+			$pattern = $separatorFormat.substring($i, $j - $i + 1)
+			if($pattern.equals($LOGFILE_SEPARATOR_PATTERN_SPACE)) {
+				$separator += " "
+				$i = $j
+			}
+		} else {
+			$separator += $currElement
+		}
+	}
+	return $separator
 }
 
 export-modulemember -Variable LEVEL_*

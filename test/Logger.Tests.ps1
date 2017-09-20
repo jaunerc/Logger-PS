@@ -20,7 +20,7 @@ Describe "Convert-LogFormat" {
     }
 	
 	It "test log format converting - date" {
-        Convert-LogFormat -logFormat "%DATE%" -isPrefix $false | Should Be (get-date -uformat "%d_%m_%y")
+        Convert-LogFormat -logFormat "%DATE%" -isPrefix $false | Should Be ("_" + (get-date -uformat "%y_%m_%d"))
     }
 }
 
@@ -42,11 +42,11 @@ Describe "New-LogTimeStamp" {
 
 Describe "Get-LogLevelText" {
     It "test log level text - debug" {
-        Get-LogLevelText -logLevel 0 | Should Be "DEBUG"
+        Get-LogLevelText -logLevel 0 | Should Be "DEBUG  "
     }
 	
 	It "test log level text - info" {
-        Get-LogLevelText -logLevel 1 | Should Be "INFO"
+        Get-LogLevelText -logLevel 1 | Should Be "INFO   "
     }
 	
 	It "test log level text - warning" {
@@ -54,7 +54,7 @@ Describe "Get-LogLevelText" {
     }
 	
 	It "test log level text - error" {
-        Get-LogLevelText -logLevel 3 | Should Be "ERROR"
+        Get-LogLevelText -logLevel 3 | Should Be "ERROR  "
     }
 	
 	It "test log level text - not supported" {
@@ -65,5 +65,11 @@ Describe "Get-LogLevelText" {
 			return
 		}
 		$false | Should Be $true
+    }
+}
+
+Describe "Get-SeparatorFromProperties" {
+    It "test separator by format" {
+        Get-SeparatorFromProperties -separatorFormat "%SPACE%|%SPACE%" | Should Be " | "
     }
 }
